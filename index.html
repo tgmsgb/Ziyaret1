@@ -626,6 +626,7 @@ function listeyiGuncelle(){
     if(iId&&z.iId!==parseInt(iId))return false;
     return true;
   });
+  f=[...f].sort((a,b)=>a.bas.localeCompare(b.bas));
   document.getElementById('liste-sayi').textContent=`${f.length} kayıt`;
   const isA=CU.rol==='admin';
   const now=new Date();
