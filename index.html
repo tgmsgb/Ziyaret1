@@ -715,8 +715,9 @@ function renderCal(){
     const isTod=d===today.getDate()&&ay===today.getMonth()&&yil===today.getFullYear();
     const ziys=gZ[d]||[];
     const islGr={};ziys.forEach(z=>{if(!islGr[z.iId])islGr[z.iId]=[];islGr[z.iId].push(z);});
+    const ziysSorted=[...ziys].sort((a,b)=>a.iAd.localeCompare(b.iAd,'tr'));
     let evHtml='';
-    ziys.slice(0,3).forEach(z=>{const renk=yRenk(z.yId);const gr=islGr[z.iId];const birlikte=gr.length>1;evHtml+=`<div class="cal-ev" style="background:${renk}20;color:${renk};border-left-color:${renk}" onclick="showPop(${z.id})" title="${z.yAd} → ${z.iAd}">${birlikte?'👥 ':''}${z.yAd.split(' ')[0]}</div>`;});
+    ziysSorted.slice(0,3).forEach(z=>{const renk=yRenk(z.yId);const gr=islGr[z.iId];const birlikte=gr.length>1;evHtml+=`<div class="cal-ev" style="background:${renk}20;color:${renk};border-left-color:${renk}" onclick="showPop(${z.id})" title="${z.yAd} → ${z.iAd}">${birlikte?'👥 ':''}${z.iAd.split('-')[0].trim()} · ${z.yAd.split(' ')[0]}</div>`;});
     if(ziys.length>3)evHtml+=`<div class="cal-more">+${ziys.length-3} daha</div>`;
     html+=`<div class="cal-cell${isTod?' today':''}"><div class="cal-day">${d}</div>${evHtml}</div>`;
   }
