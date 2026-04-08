@@ -829,8 +829,26 @@ async function koEkle(){
 function refKo(){
   document.getElementById('ko-liste').innerHTML=KON.length?KON.map(k=>`<tr>
     <td><b>${k.ad}</b></td>
-    <td><button class="btn btn-danger btn-sm" onclick="silKo(${k.id})">Sil</button></td>
+    <td style="white-space:nowrap;display:flex;gap:4px">
+      <button class="btn-edit" onclick="editKo(${k.id})">✏️ Düzenle</button>
+      <button class="btn btn-danger btn-sm" onclick="silKo(${k.id})">Sil</button>
+    </td>
   </tr>`).join(''):'<tr><td colspan="2" class="empty">Konu yok</td></tr>';
+}
+function editKo(id){
+  const k=KON.find(v=>v.id===id);if(!k)return;
+  document.getElementById('edit-title').textContent='Konu Düzenle';
+  document.getElementById('edit-body').innerHTML=`
+    <div class="fld"><label>Konu Adı *</label><input id="e-ko-ad" value="${k.ad}"></div>`;
+  document.getElementById('edit-save-btn').onclick=async()=>{
+    const ad=document.getElementById('e-ko-ad').value.trim();
+    if(!ad){alert('Konu adı zorunlu.');return;}
+    if(SB_AKTIF){yukleniyorGoster('Güncelleniyor...');await sbPatch('konular',id,{ad});yukleniyorGizle();}
+    const idx=KON.findIndex(v=>v.id===id);KON[idx]={...KON[idx],ad};
+    if(!SB_AKTIF)sv('kon2',KON);
+    refDrops();closeEdit();refKo();
+  };
+  document.getElementById('edit-overlay').classList.add('show');
 }
 async function silKo(id){
   if(!confirm('Bu konu silinsin mi?'))return;
