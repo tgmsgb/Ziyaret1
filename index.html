@@ -185,6 +185,7 @@ tr:hover td{background:var(--lblue)}
       <div class="nav-item" onclick="goPage('takvim',this)"><span class="nav-icon">📅</span> Takvim</div>
       <div class="nav-item" onclick="goPage('raporlar',this)"><span class="nav-icon">📈</span> Raporlar</div>
       <div class="nav-item" onclick="goPage('aylik',this)"><span class="nav-icon">📄</span> Aylık Rapor</div>
+      <div class="nav-item" onclick="goPage('ayarlar',this)"><span class="nav-icon">🔒</span> Ayarlar</div>
       <div class="nav-sep"></div>
       <div class="nav-group">Yönetim</div>
       <div class="nav-item admin-only" onclick="goPage('admin',this)"><span class="nav-icon">⚙️</span> Admin Paneli</div>
@@ -374,6 +375,32 @@ tr:hover td{background:var(--lblue)}
             <div class="tbl-ov">
               <table><thead><tr><th>İşletme</th><th>Ziyaret</th><th>Süre (sa)</th></tr></thead>
               <tbody id="rap-isl-ozet"></tbody></table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AYARLAR -->
+      <div class="page" id="p-ayarlar">
+        <div class="page-title">🔒 Ayarlar</div>
+        <div class="panel" style="max-width:420px">
+          <h3>Şifre Değiştir</h3>
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px">
+            <div class="fld">
+              <label>Mevcut Şifre</label>
+              <input type="password" id="s-eski" placeholder="••••••">
+            </div>
+            <div class="fld">
+              <label>Yeni Şifre</label>
+              <input type="password" id="s-yeni" placeholder="••••••">
+            </div>
+            <div class="fld">
+              <label>Yeni Şifre Tekrar</label>
+              <input type="password" id="s-yeni2" placeholder="••••••">
+            </div>
+            <div id="s-mesaj" style="display:none;font-size:13px;padding:10px;border-radius:8px"></div>
+            <div class="btn-row" style="margin-top:0">
+              <button class="btn btn-primary" onclick="sifreDegistir()">💾 Şifreyi Güncelle</button>
             </div>
           </div>
         </div>
@@ -725,11 +752,67 @@ function goPage(id,el){
   if(id==='dashboard')refDash();
   if(id==='liste')listeyiGuncelle();
   if(id==='takvim')renderCal();
+  if(id==='ayarlar'){
+    ['s-eski','s-yeni','s-yeni2'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('s-mesaj').style.display='none';
+  }
   if(id==='raporlar')refRap();
   if(id==='aylik'){initAylik();refAylik();}
   if(id==='admin')refAdmin();
 }
-function refDrops(){
+// ── AYARLAR: Şifre Değiştir ──────────────────────────
+async function sifreDegistir(){
+  const eski=document.getElementById('s-eski').value;
+  const yeni=document.getElementById('s-yeni').value;
+  const yeni2=document.getElementById('s-yeni2').value;
+  const mesajEl=document.getElementById('s-mesaj');
+
+  const goster=(txt,ok)=>{
+    mesajEl.textContent=txt;
+    mesajEl.style.display='block';
+    mesajEl.style.background=ok?'#E2EFDA':'#FCE4D6';
+    mesajEl.style.color=ok?'#375623':'#C00000';
+  };
+
+  if(!eski||!yeni||!yeni2){goster('Tüm alanları doldurunuz.',false);return;}
+  if(yeni.length<6){goster('Yeni şifre en az 6 karakter olmalı.',false);return;}
+  if(yeni!==yeni2){goster('Yeni şifreler eşleşmiyor.',false);return;}
+
+  if(!SB_AKTIF){goster('Bu özellik sadece Supabase bağlantısında çalışır.',false);return;}
+
+  // Önce eski şifreyle doğrula
+  yukleniyorGoster('Doğrulanıyor...');
+  const email=CU.username+'@internal.local';
+  const kontrol=await authSignIn(email,eski);
+  if(!kontrol||!kontrol.access_token){
+    yukleniyorGizle();
+    goster('Mevcut şifre hatalı.',false);
+    return;
+  }
+
+  // Şifreyi güncelle
+  try{
+    const r=await fetch(`${SB_URL}/auth/v1/user`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${kontrol.access_token}`},
+      body:JSON.stringify({password:yeni})
+    });
+    yukleniyorGizle();
+    if(r.ok){
+      SB_TOKEN=kontrol.access_token;
+      ['s-eski','s-yeni','s-yeni2'].forEach(i=>document.getElementById(i).value='');
+      goster('✅ Şifre başarıyla güncellendi.',true);
+    } else {
+      const d=await r.json();
+      goster('Hata: '+(d.message||'Güncelleme başarısız.'),false);
+    }
+  }catch(e){
+    yukleniyorGizle();
+    goster('Bağlantı hatası.',false);
+  }
+}
+
+
   ['f-yon','cal-yon','f-fil-yon','rap-yon'].forEach(id=>{
     const s=document.getElementById(id);
     if(!s)return;
