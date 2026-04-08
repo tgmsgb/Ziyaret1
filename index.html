@@ -628,13 +628,19 @@ function listeyiGuncelle(){
   });
   document.getElementById('liste-sayi').textContent=`${f.length} kayıt`;
   const isA=CU.rol==='admin';
-  document.getElementById('tablo-govde').innerHTML=f.length?f.map((z,i)=>`<tr>
+  const now=new Date();
+  const buAyKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('tablo-govde').innerHTML=f.length?f.map((z,i)=>{
+    const gecmis=z.ay<buAyKey;
+    const duzenleBtn=(!gecmis||isA)?`<button class="btn-edit" onclick="editZ(${z.id})">✏️ Düzenle</button>`:'';
+    const silBtn=isA?`<button class="btn btn-danger btn-sm" onclick="silZ(${z.id})">Sil</button>`:'';
+    return`<tr>
     <td><b>${i+1}</b></td><td><span class="badge b-blue">${z.yAd}</span></td><td>${z.iAd}</td>
     <td>${fd(z.bas)}</td><td>${fd(z.bit)}</td><td>${z.sure?z.sure+' sa':'—'}</td>
     <td><span class="badge b-green">${z.konu||'—'}</span></td>
     <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${z.not_||''}">${z.not_||'—'}</td>
-    <td>${isA?`<button class="btn btn-danger btn-sm" onclick="silZ(${z.id})">Sil</button>`:'—'}</td>
-  </tr>`).join(''):'<tr><td colspan="9" class="empty">Kayıt bulunamadı</td></tr>';
+    <td style="white-space:nowrap;display:flex;gap:4px">${duzenleBtn}${silBtn}</td>
+  </tr>`;}).join(''):'<tr><td colspan="9" class="empty">Kayıt bulunamadı</td></tr>';
 }
 async function silZ(id){
   if(!confirm('Bu kayıt silinsin mi?'))return;
@@ -642,6 +648,46 @@ async function silZ(id){
   ZIY=ZIY.filter(z=>z.id!==id);
   if(!SB_AKTIF)sv('ziy2',ZIY);
   listeyiGuncelle();refDrops();
+}
+function editZ(id){
+  const z=ZIY.find(v=>v.id===id);if(!z)return;
+  const now=new Date();
+  const buAyKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  if(z.ay<buAyKey&&CU.rol!=='admin'){alert('Geçmiş ay kayıtlarını sadece admin düzenleyebilir.');return;}
+  document.getElementById('edit-title').textContent='Ziyaret Düzenle';
+  const konuOpts=KON.map(k=>`<option value="${k.ad}" ${z.konu===k.ad?'selected':''}>${k.ad}</option>`).join('');
+  const yonOpts=YON.map(y=>`<option value="${y.id}" ${z.yId===y.id?'selected':''}>${y.ad}</option>`).join('');
+  const islOpts=ISL.map(i=>`<option value="${i.id}" ${z.iId===i.id?'selected':''}>${i.ad}</option>`).join('');
+  document.getElementById('edit-body').innerHTML=`
+    <div class="form-grid" style="gap:12px">
+      <div class="fld"><label>Yönetici *</label><select id="ez-yon"><option value="">— Seçiniz —</option>${yonOpts}</select></div>
+      <div class="fld"><label>İşletme *</label><select id="ez-isl"><option value="">— Seçiniz —</option>${islOpts}</select></div>
+      <div class="fld"><label>Başlangıç Tarihi *</label><input type="date" id="ez-bas" value="${z.bas}"></div>
+      <div class="fld"><label>Bitiş Tarihi *</label><input type="date" id="ez-bit" value="${z.bit}"></div>
+      <div class="fld"><label>Süre (Saat)</label><input type="number" id="ez-sure" min="0.5" max="240" step="0.5" value="${z.sure||''}"></div>
+      <div class="fld"><label>Ziyaret Konusu</label><select id="ez-konu"><option value="">— Seçiniz —</option>${konuOpts}</select></div>
+      <div class="fld" style="grid-column:1/-1"><label>Notlar</label><textarea id="ez-not" style="min-height:72px">${z.not_||''}</textarea></div>
+    </div>`;
+  document.getElementById('edit-save-btn').onclick=async()=>{
+    const yId=parseInt(document.getElementById('ez-yon').value);
+    const iId=parseInt(document.getElementById('ez-isl').value);
+    const bas=document.getElementById('ez-bas').value;
+    const bit=document.getElementById('ez-bit').value;
+    const sure=parseFloat(document.getElementById('ez-sure').value)||0;
+    const konu=document.getElementById('ez-konu').value;
+    const not_=document.getElementById('ez-not').value.trim();
+    if(!yId||!iId||!bas||!bit){alert('Yönetici, İşletme ve Tarihleri doldurunuz.');return;}
+    if(bit<bas){alert('Bitiş tarihi başlangıçtan önce olamaz.');return;}
+    const y=YON.find(v=>v.id===yId);const i=ISL.find(v=>v.id===iId);
+    const ay=bas.substring(0,7);
+    const guncelle={y_id:yId,i_id:iId,y_ad:y.ad,i_ad:i.ad,bas,bit,sure,konu,not_,ay};
+    if(SB_AKTIF){yukleniyorGoster('Güncelleniyor...');await sbPatch('ziyaretler',id,guncelle);yukleniyorGizle();}
+    const idx=ZIY.findIndex(v=>v.id===id);
+    ZIY[idx]={...ZIY[idx],yId,iId,yAd:y.ad,iAd:i.ad,bas,bit,sure,konu,not_,ay};
+    if(!SB_AKTIF)sv('ziy2',ZIY);
+    refDrops();closeEdit();listeyiGuncelle();
+  };
+  document.getElementById('edit-overlay').classList.add('show');
 }
 
 /* ── TAKVİM ── */
