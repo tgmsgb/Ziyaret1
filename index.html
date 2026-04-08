@@ -647,19 +647,32 @@ async function doLogin(){
       return;
     }
     SB_TOKEN = authRes.access_token;
-    // auth_id ile kullanicilar tablosundan profil çek
+    // auth_id ile kullanicilar tablosundan profil çek (anon key ile)
     const authUid = authRes.user.id;
-    const rows = await sbGet('kullanicilar', `auth_id=eq.${authUid}`);
-    yukleniyorGizle();
-    if(!rows || rows.length===0){
+    try{
+      const r = await fetch(`${SB_URL}/rest/v1/kullanicilar?auth_id=eq.${authUid}`,{
+        headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${authRes.access_token}`}
+      });
+      const rows = await r.json();
+      yukleniyorGizle();
+      if(!rows || rows.length===0){
+        document.getElementById('l-err').style.display='block';
+        document.getElementById('l-err').textContent='Kullanıcı profili bulunamadı.';
+        document.getElementById('l-btn').disabled=false;
+        document.getElementById('l-btn').textContent='Giriş Yap';
+        SB_TOKEN=null;
+        return;
+      }
+      CU = sbKulMap(rows[0]);
+    }catch(e){
+      yukleniyorGizle();
       document.getElementById('l-err').style.display='block';
-      document.getElementById('l-err').textContent='Kullanıcı profili bulunamadı.';
+      document.getElementById('l-err').textContent='Bağlantı hatası.';
       document.getElementById('l-btn').disabled=false;
       document.getElementById('l-btn').textContent='Giriş Yap';
       SB_TOKEN=null;
       return;
     }
-    CU = sbKulMap(rows[0]);
   } else {
     const f=KUL.find(k=>k.username===u);
     if(!f){
