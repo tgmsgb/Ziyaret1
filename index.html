@@ -113,7 +113,7 @@ tr:hover td{background:var(--lblue)}
 /* POPUP */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:none;align-items:center;justify-content:center}
 .overlay.show{display:flex}
-.popup{background:#fff;border-radius:14px;padding:28px;width:420px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.popup{background:#fff;border-radius:14px;padding:28px;width:480px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .popup h3{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px}
 .popup-close{float:right;background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)}
 .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
@@ -223,11 +223,11 @@ tr:hover td{background:var(--lblue)}
             <div class="fld"></div>
             <div class="fld" style="grid-column:1/-1">
               <label>Katılan Yöneticiler * <span style="font-weight:400;text-transform:none">(birden fazla seçebilirsiniz)</span></label>
-              <div id="f-yon-listesi" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;min-height:48px;background:#fff"></div>
+              <div id="f-yon-listesi" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;min-height:48px;max-height:140px;overflow-y:auto;background:#fff"></div>
             </div>
             <div class="fld" style="grid-column:1/-1">
               <label>Katılan Personel <span style="font-weight:400;text-transform:none">(isteğe bağlı)</span></label>
-              <div id="f-per-listesi" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;min-height:48px;background:#fff"></div>
+              <div id="f-per-listesi" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;min-height:48px;max-height:140px;overflow-y:auto;background:#fff"></div>
             </div>
             <div class="fld" style="grid-column:1/-1"><label>Notlar / Ziyaret Raporu</label>
               <textarea id="f-not" placeholder="Ziyaret sırasında gözlemlenen hususlar, alınan aksiyonlar..."></textarea>
@@ -641,8 +641,12 @@ function refDrops(){
   }
 }
 function toggleKatilimci(el,id,tur){
-  const konteyner=document.getElementById(tur==='yon'?'f-yon-listesi':'f-per-listesi');
-  const cls=tur==='yon'?'secili':'secili-per';
+  let konteyner;
+  if(tur==='yon') konteyner=document.getElementById('f-yon-listesi');
+  else if(tur==='per') konteyner=document.getElementById('f-per-listesi');
+  else konteyner=document.getElementById(tur); // düzenleme popup'ı için
+  if(!konteyner)return;
+  const cls=(tur==='per')?'secili-per':'secili';
   const secili=konteyner.dataset.secili?JSON.parse(konteyner.dataset.secili):[];
   const idx=secili.indexOf(id);
   if(idx===-1){secili.push(id);el.classList.add(cls);}
@@ -758,34 +762,54 @@ function editZ(id){
   if(z.ay<buAyKey&&CU.rol!=='admin'){alert('Geçmiş ay kayıtlarını sadece admin düzenleyebilir.');return;}
   document.getElementById('edit-title').textContent='Ziyaret Düzenle';
   const konuOpts=KON.map(k=>`<option value="${k.ad}" ${z.konu===k.ad?'selected':''}>${k.ad}</option>`).join('');
-  const yonOpts=YON.map(y=>`<option value="${y.id}" ${z.yId===y.id?'selected':''}>${y.ad}</option>`).join('');
   const islOpts=ISL.map(i=>`<option value="${i.id}" ${z.iId===i.id?'selected':''}>${i.ad}</option>`).join('');
+  // Mevcut yöneticileri parse et
+  const mevcutYonAdlar=z.yAd?z.yAd.split(',').map(s=>s.trim()):[];
+  const mevcutYonIds=YON.filter(y=>mevcutYonAdlar.includes(y.ad)).map(y=>y.id);
+  if(mevcutYonIds.length===0&&z.yId)mevcutYonIds.push(z.yId);
+  const yonCheckbox=YON.map(y=>`<div class="katilimci-check${mevcutYonIds.includes(y.id)?' secili':''}" onclick="toggleKatilimci(this,${y.id},'ez-yon')">${y.ad}</div>`).join('');
   document.getElementById('edit-body').innerHTML=`
     <div class="form-grid" style="gap:12px">
-      <div class="fld"><label>Yönetici *</label><select id="ez-yon"><option value="">— Seçiniz —</option>${yonOpts}</select></div>
+      <div class="fld" style="grid-column:1/-1">
+        <label>Katılan Yöneticiler *</label>
+        <div id="ez-yon" data-secili='${JSON.stringify(mevcutYonIds)}' style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;min-height:44px;max-height:140px;overflow-y:auto;background:#fff">${yonCheckbox}</div>
+      </div>
       <div class="fld"><label>İşletme *</label><select id="ez-isl"><option value="">— Seçiniz —</option>${islOpts}</select></div>
+      <div class="fld"><label>Ziyaret Konusu</label><select id="ez-konu"><option value="">— Seçiniz —</option>${konuOpts}</select></div>
       <div class="fld"><label>Başlangıç Tarihi *</label><input type="date" id="ez-bas" value="${z.bas}"></div>
       <div class="fld"><label>Bitiş Tarihi *</label><input type="date" id="ez-bit" value="${z.bit}"></div>
       <div class="fld"><label>Süre (Saat)</label><input type="number" id="ez-sure" min="0.5" max="240" step="0.5" value="${z.sure||''}"></div>
-      <div class="fld"><label>Ziyaret Konusu</label><select id="ez-konu"><option value="">— Seçiniz —</option>${konuOpts}</select></div>
+      <div class="fld"></div>
       <div class="fld" style="grid-column:1/-1"><label>Notlar</label><textarea id="ez-not" style="min-height:72px">${z.not_||''}</textarea></div>
     </div>`;
   document.getElementById('edit-save-btn').onclick=async()=>{
-    const yId=parseInt(document.getElementById('ez-yon').value);
+    const ezYon=document.getElementById('ez-yon');
+    const seciliYon=ezYon.dataset.secili?JSON.parse(ezYon.dataset.secili):[];
     const iId=parseInt(document.getElementById('ez-isl').value);
     const bas=document.getElementById('ez-bas').value;
     const bit=document.getElementById('ez-bit').value;
     const sure=parseFloat(document.getElementById('ez-sure').value)||0;
     const konu=document.getElementById('ez-konu').value;
     const not_=document.getElementById('ez-not').value.trim();
-    if(!yId||!iId||!bas||!bit){alert('Yönetici, İşletme ve Tarihleri doldurunuz.');return;}
+    if(!seciliYon.length||!iId||!bas||!bit){alert('En az bir yönetici, işletme ve tarih zorunludur.');return;}
     if(bit<bas){alert('Bitiş tarihi başlangıçtan önce olamaz.');return;}
-    const y=YON.find(v=>v.id===yId);const i=ISL.find(v=>v.id===iId);
+    const isl=ISL.find(v=>v.id===iId);
     const ay=bas.substring(0,7);
-    const guncelle={y_id:yId,i_id:iId,y_ad:y.ad,i_ad:i.ad,bas,bit,sure,konu,not_,ay};
-    if(SB_AKTIF){yukleniyorGoster('Güncelleniyor...');await sbPatch('ziyaretler',id,guncelle);yukleniyorGizle();}
+    const yonAdlar=seciliYon.map(yid=>YON.find(v=>v.id===yid)?.ad||'').filter(Boolean).join(', ');
+    const guncelle={y_id:seciliYon[0],i_id:iId,y_ad:yonAdlar,i_ad:isl.ad,bas,bit,sure,konu,not_,ay};
+    if(SB_AKTIF){
+      yukleniyorGoster('Güncelleniyor...');
+      await sbPatch('ziyaretler',id,guncelle);
+      // Katılımcıları güncelle
+      await fetch(`${SB_URL}/rest/v1/ziyaret_katilimcilar?ziyaret_id=eq.${id}`,{method:'DELETE',headers:sbH()});
+      for(const yid of seciliYon){
+        const y=YON.find(v=>v.id===yid);
+        await sbPost('ziyaret_katilimcilar',{ziyaret_id:id,katilimci_id:yid,katilimci_turu:'yonetici',katilimci_ad:y?.ad||''});
+      }
+      yukleniyorGizle();
+    }
     const idx=ZIY.findIndex(v=>v.id===id);
-    ZIY[idx]={...ZIY[idx],yId,iId,yAd:y.ad,iAd:i.ad,bas,bit,sure,konu,not_,ay};
+    ZIY[idx]={...ZIY[idx],yId:seciliYon[0],iId,yAd:yonAdlar,iAd:isl.ad,bas,bit,sure,konu,not_,ay};
     if(!SB_AKTIF)sv('ziy2',ZIY);
     refDrops();closeEdit();listeyiGuncelle();
   };
@@ -818,7 +842,23 @@ function renderCal(){
     const islGr={};ziys.forEach(z=>{if(!islGr[z.iId])islGr[z.iId]=[];islGr[z.iId].push(z);});
     const ziysSorted=[...ziys].sort((a,b)=>a.iAd.localeCompare(b.iAd,'tr'));
     let evHtml='';
-    ziysSorted.slice(0,3).forEach(z=>{const renk=yRenk(z.yId);const gr=islGr[z.iId];const birlikte=gr.length>1;evHtml+=`<div class="cal-ev" style="background:${renk}20;color:${renk};border-left-color:${renk}" onclick="showPop(${z.id})" title="${z.yAd} → ${z.iAd}">${birlikte?'👥 ':''}${z.iAd.split('-')[0].trim()} · ${z.yAd.split(' ')[0]}</div>`;});
+    ziysSorted.slice(0,3).forEach(z=>{
+      const yonAdlar=z.yAd?z.yAd.split(',').map(s=>s.trim()).filter(Boolean):[];
+      const islKisa=z.iAd.split('-')[0].trim();
+      if(yonAdlar.length<=1){
+        const renk=yRenk(z.yId);
+        evHtml+=`<div class="cal-ev" style="background:${renk}20;color:${renk};border-left-color:${renk}" onclick="showPop(${z.id})" title="${z.yAd} → ${z.iAd}">${islKisa} · ${yonAdlar[0]||z.yAd}</div>`;
+      } else {
+        // Birden fazla yönetici: her biri için ayrı chip
+        const renkIlk=yRenk(z.yId);
+        evHtml+=`<div class="cal-ev" style="background:${renkIlk}20;color:${renkIlk};border-left-color:${renkIlk}" onclick="showPop(${z.id})" title="${z.yAd} → ${z.iAd}">👥 ${islKisa}</div>`;
+        yonAdlar.forEach((ad,idx)=>{
+          const yon=YON.find(y=>y.ad===ad);
+          const renk=yon?yRenk(yon.id):renkIlk;
+          evHtml+=`<div class="cal-ev" style="background:${renk}15;color:${renk};border-left-color:${renk};padding-left:12px;font-size:10px" onclick="showPop(${z.id})">↳ ${ad.split(' ')[0]}</div>`;
+        });
+      }
+    });
     if(ziys.length>3)evHtml+=`<div class="cal-more">+${ziys.length-3} daha</div>`;
     html+=`<div class="cal-cell${isTod?' today':''}"><div class="cal-day">${d}</div>${evHtml}</div>`;
   }
