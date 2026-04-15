@@ -132,6 +132,10 @@ tr:hover td{background:var(--lblue)}
 .print-header{display:none;text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #1F3864}
 .print-header h2{color:#1F3864;font-size:16px}
 .print-header p{font-size:12px;color:#555;margin-top:4px}
+.katilimci-check{display:flex;align-items:center;gap:6px;padding:5px 10px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;background:#fff;transition:.15s;user-select:none}
+.katilimci-check:hover{border-color:var(--blue);background:var(--lblue)}
+.katilimci-check.secili{border-color:var(--blue);background:var(--lblue);color:var(--blue);font-weight:600}
+.katilimci-check.secili-per{border-color:var(--green);background:var(--lgreen);color:var(--green);font-weight:600}
 </style>
 </head>
 <body>
@@ -211,13 +215,19 @@ tr:hover td{background:var(--lblue)}
         <div class="panel">
           <h3>Ziyaret Bilgileri</h3>
           <div class="form-grid">
-            <div class="fld"><label>Yönetici *</label><select id="f-yon"><option value="">— Seçiniz —</option></select></div>
             <div class="fld"><label>İşletme *</label><select id="f-isl"><option value="">— Seçiniz —</option></select></div>
+            <div class="fld"><label>Ziyaret Konusu</label><select id="f-konu"><option value="">— Seçiniz —</option></select></div>
             <div class="fld"><label>Başlangıç Tarihi *</label><input type="date" id="f-bas"></div>
             <div class="fld"><label>Bitiş Tarihi *</label><input type="date" id="f-bit"></div>
             <div class="fld"><label>Süre (Saat)</label><input type="number" id="f-sure" min="0.5" max="240" step="0.5" placeholder="ör: 8"></div>
-            <div class="fld"><label>Ziyaret Konusu</label>
-              <select id="f-konu"><option value="">— Seçiniz —</option></select>
+            <div class="fld"></div>
+            <div class="fld" style="grid-column:1/-1">
+              <label>Katılan Yöneticiler * <span style="font-weight:400;text-transform:none">(birden fazla seçebilirsiniz)</span></label>
+              <div id="f-yon-listesi" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;min-height:48px;background:#fff"></div>
+            </div>
+            <div class="fld" style="grid-column:1/-1">
+              <label>Katılan Personel <span style="font-weight:400;text-transform:none">(isteğe bağlı)</span></label>
+              <div id="f-per-listesi" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;min-height:48px;background:#fff"></div>
             </div>
             <div class="fld" style="grid-column:1/-1"><label>Notlar / Ziyaret Raporu</label>
               <textarea id="f-not" placeholder="Ziyaret sırasında gözlemlenen hususlar, alınan aksiyonlar..."></textarea>
@@ -313,7 +323,7 @@ tr:hover td{background:var(--lblue)}
         <div class="tbl-wrap" id="rap-tablo-wrap">
           <div class="tbl-head"><h3 id="rap-baslik">—</h3><span id="rap-sayi" style="font-size:12px;color:var(--muted)"></span></div>
           <div class="tbl-ov"><table id="rap-tablo">
-            <thead><tr><th>#</th><th>Tarih</th><th>İl / İşletme</th><th>Katılan Birim Amirleri</th><th>Ziyaret Konusu</th><th>Süre (sa)</th><th>Notlar</th></tr></thead>
+            <thead><tr><th>#</th><th>Tarih</th><th>İl / İşletme</th><th>Katılan Yöneticiler</th><th>Katılan Personel</th><th>Ziyaret Konusu</th><th>Süre (sa)</th><th>Notlar</th></tr></thead>
             <tbody id="rap-govde"></tbody>
           </table></div>
         </div>
@@ -351,6 +361,7 @@ tr:hover td{background:var(--lblue)}
           <button class="admin-tab active" onclick="aTab('ku',this)">👤 Kullanıcılar</button>
           <button class="admin-tab" onclick="aTab('ym',this)">🏷️ Yöneticiler</button>
           <button class="admin-tab" onclick="aTab('im',this)">🏭 İşletmeler</button>
+          <button class="admin-tab" onclick="aTab('per',this)">👷 Personel</button>
           <button class="admin-tab" onclick="aTab('ko',this)">📌 Ziyaret Konuları</button>
         </div>
 
@@ -396,6 +407,36 @@ tr:hover td{background:var(--lblue)}
           </div>
           <div class="tbl-wrap"><div class="tbl-head"><h3>İşletme Listesi</h3></div>
             <div class="tbl-ov"><table><thead><tr><th>İşletme Adı</th><th>Şehir</th><th>Müdür</th><th>Ziyaret</th><th></th></tr></thead><tbody id="im-liste"></tbody></table></div>
+          </div>
+        </div>
+        <div class="admin-sec" id="as-per">
+          <div class="panel"><h3>Yeni Personel Ekle</h3>
+            <div class="form-grid">
+              <div class="fld"><label>Ad Soyad *</label><input type="text" id="per-ad" placeholder="Ad Soyad"></div>
+              <div class="fld"><label>Unvan</label><input type="text" id="per-unvan" placeholder="Teknik Uzman, Mühendis..."></div>
+              <div class="fld"><label>Birim / Departman</label><input type="text" id="per-birim" placeholder="Teknik İşler, İdari İşler..."></div>
+              <div class="fld"><label>Telefon</label><input type="text" id="per-tel" placeholder="0312 xxx xx xx"></div>
+              <div class="fld"><label>E-posta</label><input type="email" id="per-mail" placeholder="ad@tigem.gov.tr"></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="perEkle()">+ Ekle</button></div>
+          </div>
+          <div class="tbl-wrap"><div class="tbl-head"><h3>Personel Listesi</h3></div>
+            <div class="tbl-ov"><table><thead><tr><th>Ad Soyad</th><th>Unvan</th><th>Birim</th><th>Telefon</th><th>E-posta</th><th></th></tr></thead><tbody id="per-liste"></tbody></table></div>
+          </div>
+        </div>
+        <div class="admin-sec" id="as-per">
+          <div class="panel"><h3>Yeni Personel Ekle</h3>
+            <div class="form-grid">
+              <div class="fld"><label>Ad Soyad *</label><input type="text" id="per-ad" placeholder="Ad Soyad"></div>
+              <div class="fld"><label>Unvan</label><input type="text" id="per-unvan" placeholder="Teknik Uzman..."></div>
+              <div class="fld"><label>Birim / Departman</label><input type="text" id="per-birim" placeholder="Teknik İşler..."></div>
+              <div class="fld"><label>Telefon</label><input type="text" id="per-tel" placeholder="0312 xxx xx xx"></div>
+              <div class="fld"><label>E-posta</label><input type="email" id="per-mail" placeholder="ad@tigem.gov.tr"></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="perEkle()">+ Ekle</button></div>
+          </div>
+          <div class="tbl-wrap"><div class="tbl-head"><h3>Personel Listesi</h3></div>
+            <div class="tbl-ov"><table><thead><tr><th>Ad Soyad</th><th>Unvan</th><th>Birim</th><th>Telefon</th><th>E-posta</th><th></th></tr></thead><tbody id="per-liste"></tbody></table></div>
           </div>
         </div>
         <div class="admin-sec" id="as-ko">
@@ -452,21 +493,11 @@ async function authSignOut(){
   if(!SB_TOKEN)return;
   try{await fetch(`${SB_URL}/auth/v1/logout`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_TOKEN}`}});}catch(e){}
   SB_TOKEN=null;
-  SB_REFRESH_TOKEN=null;
-  SB_TOKEN_EXPIRY=null;
 }
 
 async function tokenYenile(){
   if(!SB_REFRESH_TOKEN)return false;
-  try{
-    const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY},body:JSON.stringify({refresh_token:SB_REFRESH_TOKEN})});
-    const d=await r.json();
-    if(!r.ok||!d.access_token)return false;
-    SB_TOKEN=d.access_token;
-    SB_REFRESH_TOKEN=d.refresh_token;
-    SB_TOKEN_EXPIRY=Date.now()+(d.expires_in-60)*1000;
-    return true;
-  }catch(e){return false;}
+  try{const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY},body:JSON.stringify({refresh_token:SB_REFRESH_TOKEN})});const d=await r.json();if(!r.ok||!d.access_token)return false;SB_TOKEN=d.access_token;SB_REFRESH_TOKEN=d.refresh_token;SB_TOKEN_EXPIRY=Date.now()+(d.expires_in-60)*1000;return true;}catch(e){return false;}
 }
 async function tokenKontrol(){
   if(!SB_TOKEN)return false;
@@ -484,7 +515,7 @@ const KUL_VARSAYILAN=[{id:1,ad:'Ali KISA',username:'akisa',pass:'Ti.,123+',rol:'
 const YON_VARSAYILAN=[{id:1,ad:'Ahmet Yılmaz',unvan:'GMY',mail:'',tel:''},{id:2,ad:'Mehmet Kaya',unvan:'Daire Başkanı',mail:'',tel:''},{id:3,ad:'Ayşe Demir',unvan:'Müdür',mail:'',tel:''},{id:4,ad:'Fatma Şahin',unvan:'GMY',mail:'',tel:''},{id:5,ad:'Ali Çelik',unvan:'Müdür',mail:'',tel:''},{id:6,ad:'Zeynep Arslan',unvan:'Daire Başkanı',mail:'',tel:''},{id:7,ad:'Mustafa Koç',unvan:'GMY',mail:'',tel:''},{id:8,ad:'Emine Yıldız',unvan:'Müdür',mail:'',tel:''}];
 const ISL_VARSAYILAN=[{id:1,ad:'İşletme 01 - Ankara',sehir:'Ankara',mudur:'',tel:''},{id:2,ad:'İşletme 02 - İzmir',sehir:'İzmir',mudur:'',tel:''},{id:3,ad:'İşletme 03 - Konya',sehir:'Konya',mudur:'',tel:''},{id:4,ad:'İşletme 04 - Bursa',sehir:'Bursa',mudur:'',tel:''},{id:5,ad:'İşletme 05 - Adana',sehir:'Adana',mudur:'',tel:''},{id:6,ad:'İşletme 06 - Antalya',sehir:'Antalya',mudur:'',tel:''},{id:7,ad:'İşletme 07 - Samsun',sehir:'Samsun',mudur:'',tel:''},{id:8,ad:'İşletme 08 - Erzurum',sehir:'Erzurum',mudur:'',tel:''},{id:9,ad:'İşletme 09 - Diyarbakır',sehir:'Diyarbakır',mudur:'',tel:''},{id:10,ad:'İşletme 10 - Trabzon',sehir:'Trabzon',mudur:'',tel:''},{id:11,ad:'İşletme 11 - Balıkesir',sehir:'Balıkesir',mudur:'',tel:''},{id:12,ad:'İşletme 12 - Manisa',sehir:'Manisa',mudur:'',tel:''},{id:13,ad:'İşletme 13 - Kayseri',sehir:'Kayseri',mudur:'',tel:''},{id:14,ad:'İşletme 14 - Eskişehir',sehir:'Eskişehir',mudur:'',tel:''},{id:15,ad:'İşletme 15 - Mersin',sehir:'Mersin',mudur:'',tel:''},{id:16,ad:'İşletme 16 - Gaziantep',sehir:'Gaziantep',mudur:'',tel:''},{id:17,ad:'İşletme 17 - Malatya',sehir:'Malatya',mudur:'',tel:''}];
 
-let KUL=ld('kul2',KUL_VARSAYILAN),YON=ld('yon2',YON_VARSAYILAN),ISL=ld('isl2',ISL_VARSAYILAN),ZIY=ld('ziy2',[]),KON=ld('kon2',[]),SAY=ld('say2',0),CU=null,calD=new Date();
+let KUL=ld('kul2',KUL_VARSAYILAN),YON=ld('yon2',YON_VARSAYILAN),ISL=ld('isl2',ISL_VARSAYILAN),ZIY=ld('ziy2',[]),KON=ld('kon2',[]),PER=ld('per2',[]),SAY=ld('say2',0),CU=null,calD=new Date();
 
 function sbKulMap(r){return{id:r.id,ad:r.ad,username:r.username,rol:r.rol,auth_id:r.auth_id||null};}
 function sbYonMap(r){return{id:r.id,ad:r.ad,unvan:r.unvan||'',mail:r.mail||'',tel:r.tel||''};}
@@ -492,12 +523,13 @@ function sbIslMap(r){return{id:r.id,ad:r.ad,sehir:r.sehir||'',mudur:r.mudur||'',
 function sbZiyMap(r){return{id:r.id,yId:r.y_id,iId:r.i_id,yAd:r.y_ad,iAd:r.i_ad,bas:r.bas,bit:r.bit,sure:r.sure,konu:r.konu||'',not_:r.not_||'',ay:r.ay||'',ekl:r.ekl||''};}
 
 function sbKonMap(r){return{id:r.id,ad:r.ad};}
+function sbPerMap(r){return{id:r.id,ad:r.ad,unvan:r.unvan||'',birim:r.birim||'',tel:r.tel||'',mail:r.mail||''};}
 async function verileriYukle(){
   if(!SB_AKTIF)return;
   yukleniyorGoster('Veriler yükleniyor...');
   try{
-    const[k,y,i,z,ko]=await Promise.all([sbGet('kullanicilar'),sbGet('yoneticiler'),sbGet('isletmeler'),sbGet('ziyaretler','order=id.desc'),sbGet('konular')]);
-    if(k)KUL=k.map(sbKulMap);if(y)YON=y.map(sbYonMap);if(i)ISL=i.map(sbIslMap);if(z)ZIY=z.map(sbZiyMap);if(ko)KON=ko.map(sbKonMap);
+    const[k,y,i,z,ko,pe]=await Promise.all([sbGet('kullanicilar'),sbGet('yoneticiler'),sbGet('isletmeler'),sbGet('ziyaretler','order=id.desc'),sbGet('konular'),sbGet('personel')]);
+    if(k)KUL=k.map(sbKulMap);if(y)YON=y.map(sbYonMap);if(i)ISL=i.map(sbIslMap);if(z)ZIY=z.map(sbZiyMap);if(ko)KON=ko.map(sbKonMap);if(pe)PER=pe.map(sbPerMap);
   }finally{yukleniyorGizle();}
 }
 
@@ -595,33 +627,79 @@ function refDrops(){
   const fa=document.getElementById('f-fil-ay');
   fa.innerHTML='<option value="">Tüm Aylar</option>';
   aylar.forEach(a=>{const d=new Date(a+'-01');fa.innerHTML+=`<option value="${a}">${d.toLocaleString('tr',{month:'long',year:'numeric'})}</option>`;});
+  // Yönetici checkbox listesi
+  const fyl=document.getElementById('f-yon-listesi');
+  if(fyl){
+    const seciliYon=fyl.dataset.secili?JSON.parse(fyl.dataset.secili):[];
+    fyl.innerHTML=YON.map(y=>`<div class="katilimci-check${seciliYon.includes(y.id)?' secili':''}" onclick="toggleKatilimci(this,${y.id},'yon')">${y.ad}</div>`).join('');
+  }
+  // Personel checkbox listesi
+  const fpl=document.getElementById('f-per-listesi');
+  if(fpl){
+    const seciliPer=fpl.dataset.secili?JSON.parse(fpl.dataset.secili):[];
+    fpl.innerHTML=PER.map(p=>`<div class="katilimci-check${seciliPer.includes(p.id)?' secili-per':''}" onclick="toggleKatilimci(this,${p.id},'per')">${p.ad}${p.birim?' ('+p.birim+')':''}</div>`).join('');
+  }
+}
+function toggleKatilimci(el,id,tur){
+  const konteyner=document.getElementById(tur==='yon'?'f-yon-listesi':'f-per-listesi');
+  const cls=tur==='yon'?'secili':'secili-per';
+  const secili=konteyner.dataset.secili?JSON.parse(konteyner.dataset.secili):[];
+  const idx=secili.indexOf(id);
+  if(idx===-1){secili.push(id);el.classList.add(cls);}
+  else{secili.splice(idx,1);el.classList.remove(cls);}
+  konteyner.dataset.secili=JSON.stringify(secili);
 }
 
 async function kaydet(){
-  const yId=parseInt(document.getElementById('f-yon').value);
   const iId=parseInt(document.getElementById('f-isl').value);
   const bas=document.getElementById('f-bas').value;
   const bit=document.getElementById('f-bit').value;
   const sure=parseFloat(document.getElementById('f-sure').value)||0;
   const konu=document.getElementById('f-konu').value;
   const not_=document.getElementById('f-not').value.trim();
-  if(!yId||!iId||!bas||!bit){alert('Yönetici, İşletme ve Tarihleri doldurunuz.');return;}
+  // Seçili yöneticiler
+  const fyl=document.getElementById('f-yon-listesi');
+  const seciliYon=fyl&&fyl.dataset.secili?JSON.parse(fyl.dataset.secili):[];
+  // Seçili personel
+  const fpl=document.getElementById('f-per-listesi');
+  const seciliPer=fpl&&fpl.dataset.secili?JSON.parse(fpl.dataset.secili):[];
+  if(!seciliYon.length||!iId||!bas||!bit){alert('En az bir yönetici, işletme ve tarih zorunludur.');return;}
   if(bit<bas){alert('Bitiş tarihi başlangıçtan önce olamaz.');return;}
-  const y=YON.find(v=>v.id===yId);const i=ISL.find(v=>v.id===iId);
+  const isl=ISL.find(v=>v.id===iId);
   const ay=bas.substring(0,7);
+  // İlk yönetici ana kayıt için (geriye dönük uyumluluk)
+  const ilkYon=YON.find(v=>v.id===seciliYon[0]);
+  const yonAdlar=seciliYon.map(id=>YON.find(v=>v.id===id)?.ad||'').filter(Boolean).join(', ');
   if(SB_AKTIF){
     yukleniyorGoster('Kaydediliyor...');
-    const r=await sbPost('ziyaretler',{y_id:yId,i_id:iId,y_ad:y.ad,i_ad:i.ad,bas,bit,sure,konu,not_,ay,ekl:CU.username});
+    const r=await sbPost('ziyaretler',{y_id:seciliYon[0],i_id:iId,y_ad:yonAdlar,i_ad:isl.ad,bas,bit,sure,konu,not_,ay,ekl:CU.username});
+    if(!r){yukleniyorGizle();alert('Kayıt hatası!');return;}
+    const zId=r.id;
+    // Katılımcıları kaydet
+    const katilimcilar=[
+      ...seciliYon.map(id=>({ziyaret_id:zId,katilimci_id:id,katilimci_turu:'yonetici',katilimci_ad:YON.find(v=>v.id===id)?.ad||''})),
+      ...seciliPer.map(id=>({ziyaret_id:zId,katilimci_id:id,katilimci_turu:'personel',katilimci_ad:PER.find(v=>v.id===id)?.ad||''}))
+    ];
+    for(const k of katilimcilar){await sbPost('ziyaret_katilimcilar',k);}
     yukleniyorGizle();
-    if(r){ZIY.unshift(sbZiyMap(r));}else{alert('Kayıt hatası!');return;}
-  }else{SAY++;ZIY.unshift({id:SAY,yId,iId,yAd:y.ad,iAd:i.ad,bas,bit,sure,konu,not_,ay,ekl:CU.username});sv('ziy2',ZIY);sv('say2',SAY);}
+    ZIY.unshift(sbZiyMap(r));
+  }else{
+    SAY++;
+    const zId=SAY;
+    ZIY.unshift({id:zId,yId:seciliYon[0],iId,yAd:yonAdlar,iAd:isl.ad,bas,bit,sure,konu,not_,ay,ekl:CU.username});
+    sv('ziy2',ZIY);sv('say2',SAY);
+  }
   formTemizle();refDrops();alert('✅ Ziyaret kaydedildi!');
 }
 function formTemizle(){
   const t=new Date().toISOString().split('T')[0];
-  ['f-yon','f-isl','f-konu'].forEach(id=>document.getElementById(id).value='');
+  ['f-isl','f-konu'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   ['f-bas','f-bit'].forEach(id=>document.getElementById(id).value=t);
   ['f-sure','f-not'].forEach(id=>document.getElementById(id).value='');
+  const fyl=document.getElementById('f-yon-listesi');
+  if(fyl){fyl.dataset.secili='[]';fyl.querySelectorAll('.katilimci-check').forEach(el=>el.classList.remove('secili'));}
+  const fpl=document.getElementById('f-per-listesi');
+  if(fpl){fpl.dataset.secili='[]';fpl.querySelectorAll('.katilimci-check').forEach(el=>el.classList.remove('secili-per'));}
 }
 formTemizle();
 
@@ -814,6 +892,7 @@ function refAylik(){
     <td><b>${i+1}</b></td>
     <td style="white-space:nowrap">${fd(z.bas)}${z.bas!==z.bit?'<br><span style="color:var(--muted);font-size:11px">→ '+fd(z.bit)+'</span>':''}</td>
     <td><b>${z.iAd}</b></td><td><span class="badge b-blue">${z.yAd}</span></td>
+    <td style="font-size:11px">${z.perAdlar||'—'}</td>
     <td><span class="badge b-green">${z.konu||'—'}</span></td>
     <td style="text-align:center">${z.sure||'—'}</td>
     <td style="font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${z.not_||''}">${z.not_||'—'}</td>
@@ -878,7 +957,7 @@ function aTab(id,el){
   document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('as-'+id).classList.add('active');el.classList.add('active');
 }
-function refAdmin(){refKu();refYm();refIm();refKo();}
+function refAdmin(){refKu();refYm();refIm();refPer();refKo();}
 
 // KONULAR
 async function koEkle(){
@@ -984,6 +1063,50 @@ function editKu(id){
     const idx=KUL.findIndex(v=>v.id===id);KUL[idx]={...KUL[idx],...guncelle};
     if(id===CU.id){CU=KUL[idx];document.getElementById('t-name').textContent=CU.ad;}
     if(!SB_AKTIF)sv('kul2',KUL);closeEdit();refKu();
+  };
+  document.getElementById('edit-overlay').classList.add('show');
+}
+
+// PERSONEL
+async function perEkle(){
+  const ad=document.getElementById('per-ad').value.trim();
+  if(!ad){alert('Ad Soyad zorunludur.');return;}
+  const veri={ad,unvan:document.getElementById('per-unvan').value.trim(),birim:document.getElementById('per-birim').value.trim(),tel:document.getElementById('per-tel').value.trim(),mail:document.getElementById('per-mail').value.trim()};
+  let yeni;
+  if(SB_AKTIF){yukleniyorGoster('Kaydediliyor...');const r=await sbPost('personel',veri);yukleniyorGizle();if(!r){alert('Kayıt hatası!');return;}yeni=sbPerMap(r);}
+  else{yeni={id:Math.max(0,...PER.map(p=>p.id),0)+1,...veri};sv('per2',[...PER,yeni]);}
+  PER.push(yeni);['per-ad','per-unvan','per-birim','per-tel','per-mail'].forEach(i=>document.getElementById(i).value='');
+  refDrops();refPer();
+}
+function refPer(){
+  document.getElementById('per-liste').innerHTML=PER.length?PER.map(p=>`<tr>
+    <td><b>${p.ad}</b></td><td>${p.unvan||'—'}</td><td>${p.birim||'—'}</td><td>${p.tel||'—'}</td><td>${p.mail||'—'}</td>
+    <td style="white-space:nowrap;display:flex;gap:4px">
+      <button class="btn-edit" onclick="editPer(${p.id})">✏️ Düzenle</button>
+      <button class="btn btn-danger btn-sm" onclick="silPer(${p.id})">Sil</button>
+    </td></tr>`).join(''):'<tr><td colspan="6" class="empty">Personel yok</td></tr>';
+}
+async function silPer(id){
+  if(!confirm('Silinsin mi?'))return;
+  if(SB_AKTIF){yukleniyorGoster('Siliniyor...');await sbDelete('personel',id);yukleniyorGizle();}
+  PER=PER.filter(p=>p.id!==id);if(!SB_AKTIF)sv('per2',PER);refDrops();refPer();
+}
+function editPer(id){
+  const p=PER.find(v=>v.id===id);if(!p)return;
+  document.getElementById('edit-title').textContent='Personel Düzenle';
+  document.getElementById('edit-body').innerHTML=`<div class="form-grid" style="gap:12px">
+    <div class="fld"><label>Ad Soyad *</label><input id="e-per-ad" value="${p.ad}"></div>
+    <div class="fld"><label>Unvan</label><input id="e-per-unvan" value="${p.unvan||''}"></div>
+    <div class="fld"><label>Birim</label><input id="e-per-birim" value="${p.birim||''}"></div>
+    <div class="fld"><label>Telefon</label><input id="e-per-tel" value="${p.tel||''}"></div>
+    <div class="fld"><label>E-posta</label><input type="email" id="e-per-mail" value="${p.mail||''}"></div>
+  </div>`;
+  document.getElementById('edit-save-btn').onclick=async()=>{
+    const ad=document.getElementById('e-per-ad').value.trim();if(!ad){alert('Ad Soyad zorunlu.');return;}
+    const guncelle={ad,unvan:document.getElementById('e-per-unvan').value.trim(),birim:document.getElementById('e-per-birim').value.trim(),tel:document.getElementById('e-per-tel').value.trim(),mail:document.getElementById('e-per-mail').value.trim()};
+    if(SB_AKTIF){yukleniyorGoster('Güncelleniyor...');await sbPatch('personel',id,guncelle);yukleniyorGizle();}
+    const idx=PER.findIndex(v=>v.id===id);PER[idx]={...PER[idx],...guncelle};
+    if(!SB_AKTIF)sv('per2',PER);refDrops();closeEdit();refPer();
   };
   document.getElementById('edit-overlay').classList.add('show');
 }
