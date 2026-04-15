@@ -436,12 +436,14 @@ const SB_URL = 'https://ovthambriloxngqykdgf.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dGhhbWJyaWxveG5ncXlrZGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMTExNDksImV4cCI6MjA5MTc4NzE0OX0.dPhZTKvHuD-zvGwULoSr3cnlF_z-2YVylx7pPEyLZmU';
 const SB_AKTIF = SB_URL.startsWith('https://') && SB_KEY.length > 20;
 let SB_TOKEN = null;
+let SB_REFRESH_TOKEN = null;
+let SB_TOKEN_EXPIRY = null;
 
 const sbH=()=>({'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_TOKEN||SB_KEY}`});
-async function sbGet(t,f=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${f}&order=id.asc`,{headers:sbH()});if(!r.ok)throw new Error(r.status);return await r.json();}catch(e){console.warn('sbGet',e);return null;}}
-async function sbPost(t,v){try{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH(),'Prefer':'return=representation'},body:JSON.stringify(v)});if(!r.ok)throw new Error(r.status);const d=await r.json();return Array.isArray(d)?d[0]:d;}catch(e){console.warn('sbPost',e);return null;}}
-async function sbPatch(t,id,v){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...sbH(),'Prefer':'return=representation'},body:JSON.stringify(v)});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.warn('sbPatch',e);return false;}}
-async function sbDelete(t,id){try{await fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:sbH()});return true;}catch(e){console.warn('sbDelete',e);return false;}}
+async function sbGet(t,f=''){try{await tokenKontrol();const r=await fetch(`${SB_URL}/rest/v1/${t}?${f}&order=id.asc`,{headers:sbH()});if(!r.ok)throw new Error(r.status);return await r.json();}catch(e){console.warn('sbGet',e);return null;}}
+async function sbPost(t,v){try{await tokenKontrol();const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH(),'Prefer':'return=representation'},body:JSON.stringify(v)});if(!r.ok)throw new Error(r.status);const d=await r.json();return Array.isArray(d)?d[0]:d;}catch(e){console.warn('sbPost',e);return null;}}
+async function sbPatch(t,id,v){try{await tokenKontrol();const r=await fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...sbH(),'Prefer':'return=representation'},body:JSON.stringify(v)});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.warn('sbPatch',e);return false;}}
+async function sbDelete(t,id){try{await tokenKontrol();await fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:sbH()});return true;}catch(e){console.warn('sbDelete',e);return false;}}
 
 async function authSignIn(email,pass){
   try{const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=password`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY},body:JSON.stringify({email,password:pass})});const d=await r.json();if(!r.ok)return null;return d;}catch(e){return null;}
@@ -450,8 +452,27 @@ async function authSignOut(){
   if(!SB_TOKEN)return;
   try{await fetch(`${SB_URL}/auth/v1/logout`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_TOKEN}`}});}catch(e){}
   SB_TOKEN=null;
+  SB_REFRESH_TOKEN=null;
+  SB_TOKEN_EXPIRY=null;
 }
 
+async function tokenYenile(){
+  if(!SB_REFRESH_TOKEN)return false;
+  try{
+    const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY},body:JSON.stringify({refresh_token:SB_REFRESH_TOKEN})});
+    const d=await r.json();
+    if(!r.ok||!d.access_token)return false;
+    SB_TOKEN=d.access_token;
+    SB_REFRESH_TOKEN=d.refresh_token;
+    SB_TOKEN_EXPIRY=Date.now()+(d.expires_in-60)*1000;
+    return true;
+  }catch(e){return false;}
+}
+async function tokenKontrol(){
+  if(!SB_TOKEN)return false;
+  if(SB_TOKEN_EXPIRY&&Date.now()>SB_TOKEN_EXPIRY){return await tokenYenile();}
+  return true;
+}
 function yukleniyorGoster(m='Yükleniyor...'){document.getElementById('yukleniyor').style.display='flex';document.getElementById('yukleniyor-mesaj').textContent=m;}
 function yukleniyorGizle(){document.getElementById('yukleniyor').style.display='none';}
 
@@ -497,6 +518,8 @@ async function doLogin(){
       yukleniyorGizle();errEl.style.display='block';btn.disabled=false;btn.textContent='Giriş Yap';return;
     }
     SB_TOKEN=authRes.access_token;
+    SB_REFRESH_TOKEN=authRes.refresh_token||null;
+    SB_TOKEN_EXPIRY=Date.now()+((authRes.expires_in||3600)-60)*1000;
     const authUid=authRes.user.id;
     try{
       const r=await fetch(`${SB_URL}/rest/v1/kullanicilar?auth_id=eq.${authUid}`,{headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_TOKEN}`}});
