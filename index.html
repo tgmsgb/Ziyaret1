@@ -727,7 +727,13 @@ function listeyiGuncelle(){
   let f=ZIY.filter(z=>{
     if(ara&&!z.yAd.toLowerCase().includes(ara)&&!z.iAd.toLowerCase().includes(ara)&&!(z.konu||'').toLowerCase().includes(ara))return false;
     if(ay&&z.ay!==ay)return false;
-    if(yId&&z.yId!==parseInt(yId))return false;
+    if(yId){
+      const filYon2=YON.find(y=>y.id===parseInt(yId));
+      if(filYon2){
+        const yAdlar2=z.yAd?z.yAd.split(',').map(s=>s.trim()):[];
+        if(!yAdlar2.includes(filYon2.ad)&&z.yId!==parseInt(yId))return false;
+      }
+    }
     if(iId&&z.iId!==parseInt(iId))return false;
     return true;
   });
@@ -829,7 +835,16 @@ function renderCal(){
   const ilk=(basd.getDay()+6)%7;
   const ayBas=new Date(yil,ay,1).toISOString().split('T')[0];
   const ayBit=new Date(yil,ay+1,0).toISOString().split('T')[0];
-  let f=ZIY.filter(z=>{if(filI&&z.iId!==filI)return false;if(filY&&z.yId!==filY)return false;return z.bas<=ayBit&&z.bit>=ayBas;});
+  const filYon=filY?YON.find(y=>y.id===filY):null;
+  let f=ZIY.filter(z=>{
+    if(filI&&z.iId!==filI)return false;
+    if(filYon){
+      // Çoklu yönetici desteği: y_ad alanında yönetici adını ara
+      const yAdlar=z.yAd?z.yAd.split(',').map(s=>s.trim()):[];
+      if(!yAdlar.includes(filYon.ad)&&z.yId!==filY)return false;
+    }
+    return z.bas<=ayBit&&z.bit>=ayBas;
+  });
   const gZ={};
   f.forEach(z=>{let cur=new Date(z.bas+'T00:00:00');const end=new Date(z.bit+'T00:00:00');while(cur<=end){if(cur.getMonth()===ay&&cur.getFullYear()===yil){const g=cur.getDate();if(!gZ[g])gZ[g]=[];gZ[g].push(z);}cur.setDate(cur.getDate()+1);}});
   const today=new Date();
